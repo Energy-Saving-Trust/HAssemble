@@ -156,7 +156,7 @@ scomm_tenure <- function(data, tenure = TENURE, mute = NULL, ...) {
     ) %>%
     dplyr::mutate(EPC_TENURE_SECONDARY = case_when(
       str_detect({{tenure}}, regex("owner-occupied|owned|owner|homeowner", ignore_case = T)) ~ "Owner Occupied",
-      str_detect({{tenure}}, regex("rented \\(private\\)|private tenant|privately rented|private rented", ignore_case = T)) ~ "Private",
+      str_detect({{tenure}}, regex("rented \\(private\\)|private tenant|privately rented|private rented", ignore_case = T)) ~ "Privately Rented",
       str_detect({{tenure}}, regex("housing association|house association", ignore_case = T)) ~ "Housing association",
       str_detect({{tenure}}, regex("council|local authority", ignore_case = T)) ~ "Local Authority",
       # Then all others categorised as unknown
