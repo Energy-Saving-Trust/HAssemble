@@ -21,7 +21,7 @@ TOID_BB_logic <- function(data, var, group, trust = 0.5, join = TRUE){
 
   cat(paste0("Processing data for ", group_name, " and ", var_name, " \n"))
   trusted_props <- data %>%
-    # Only calculate proprtions of known data - drop the NAs and make sure we're not aggregating spatial aggregates with NA
+    # Only calculate proportions of known data - drop the NAs and make sure we're not aggregating spatial aggregates with NA
     # So if the building block ID is "NA" then dont group all of those NAs across the country up together
     drop_na({{var}}, {{group}}) %>%
     group_by({{group}}) %>%
@@ -49,5 +49,4 @@ TOID_BB_logic <- function(data, var, group, trust = 0.5, join = TRUE){
     cat(paste0("Loading trusted proportions for ", group_name, " and ", var_name, " into environment.\n"))
     assign(paste0("trusted_proportions_", var_name, "_", group_name), trusted_props, envir = .GlobalEnv)
   }
-
 }
