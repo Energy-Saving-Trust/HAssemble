@@ -21,7 +21,7 @@ epc_clean_commerical <- function(data, func_list = NULL, mute = NULL){
 
   if (is.null(func_list)) {
     # Retrieve available function names in the package namespace
-    func_list <- grep("^SComm_", ls(envir = asNamespace(namespace)), value = TRUE)
+    func_list <- grep("^scomm_", ls(envir = asNamespace(namespace)), value = TRUE)
   }
 
   for (func_name in func_list) {
