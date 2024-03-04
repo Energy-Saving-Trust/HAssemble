@@ -65,7 +65,7 @@ scomm_type <- function(data, type = PROPERTY_TYPE, form = BUILT_FORM, mute = NUL
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed property type cleaning. Adding "prop_type" object to the environment.\n')
-  assign("prop_type", cleaning, envir = .GlobalEnv)
+  assign("epc_prop_type", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -119,7 +119,7 @@ scomm_age <- function(data, age = CONSTRUCTION_AGE_BAND, epc = CURRENT_ENERGY_RA
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed property age cleaning. Adding "prop_age" object to the environment.\n')
-  assign("prop_age", cleaning, envir = .GlobalEnv)
+  assign("epc_prop_age", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -167,7 +167,7 @@ scomm_tenure <- function(data, tenure = TENURE, mute = NULL, ...) {
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed tenure cleaning. Adding "prop_tenure" object to the environment.\n')
-  assign("prop_tenure", cleaning, envir = .GlobalEnv)
+  assign("epc_prop_tenure", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -213,7 +213,7 @@ scomm_flatfloor <- function(data, floor = FLOOR_LEVEL, ptype = PROPERTY_TYPE, mu
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed floor level cleaning. Adding "flat_floor_level" object to the environment.\n')
-  assign("flat_floor_level", cleaning, envir = .GlobalEnv)
+  assign("epc_flat_floor_level", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -261,14 +261,7 @@ scomm_rooms <- function(data, rooms = NUMBER_HABITABLE_ROOMS, tfa = TOTAL_FLOOR_
 
     # Assign the new table to the current table or a new data table
     cat('\u2705 - Completed habitable rooms cleaning. Adding "hab_rooms_tfa" object to the environment.\n')
-    assign("hab_rooms_tfa", cleaning, envir = .GlobalEnv)
-
-  if(is.null(mute) || mute == FALSE){
-    # Assign the new table to the current table or a new data table
-    cat('Completed habitable rooms cleaning. Adding "hab_rooms_tfa" object to the environment.\n')
-    assign("hab_rooms_tfa", cleaning, envir = .GlobalEnv)
-  }
-
+    assign("epc_hab_rooms_tfa", cleaning, envir = .GlobalEnv)
 }
 
 ######### Wall Construction #########
@@ -344,7 +337,7 @@ scomm_walls <- function(data, walls = WALL_DESCRIPTION, imp = IMPROVEMENTS, mute
 
     # Assign the new table to the current table or a new data table
     cat('\u2705 - Completed wall type and insulation cleaning. Adding "wall_details" object to the environment.\n')
-    assign("wall_details", cleaning, envir = .GlobalEnv)
+    assign("epc_wall_details", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -464,7 +457,7 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
 
     # Assign the new table to the current table or a new data table
     cat('\u2705 - Completed roof type and insulation cleaning. Adding "roof_details" object to the environment.\n')
-    assign("roof_details", cleaning, envir = .GlobalEnv)
+    assign("epc_roof_details", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     cat("Cross-tab of cleaned roof construction data vs. original EPC data for first referenced roof element from data input of ", ensym(roofs), ":\n", sep = "")
@@ -567,7 +560,7 @@ scomm_floor <- function(data, floors = FLOOR_DESCRIPTION, ages = CONSTRUCTION_AG
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed floor type and insulation cleaning. Adding "floor_details" object to the environment.\n')
-  assign("floor_details", cleaning, envir = .GlobalEnv)
+  assign("epc_floor_details", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -662,7 +655,7 @@ scomm_heating <- function(data, m_heat = MAINHEAT_DESCRIPTION, meter = ENERGY_TA
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed heating and meter cleaning. Adding "main_heating" object to the environment.\n')
-  assign("main_heating", cleaning, envir = .GlobalEnv)
+  assign("epc_main_heating", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -729,7 +722,7 @@ scomm_sec_heating <- function(data, s_heat = SECONDHEAT_DESCRIPTION, mute = NULL
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed secondary heating cleaning. Adding "sec_heating" object to the environment.\n')
-  assign("sec_heating", cleaning, envir = .GlobalEnv)
+  assign("epc_sec_heating", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -775,7 +768,7 @@ scomm_gas_grid <- function(data, grid = MAINS_GAS_FLAG, m_heat = MAINHEAT_DESCRI
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed gas grid inference. Adding "gas_grid_flag" object to the environment.\n')
-  assign("gas_grid_flag", cleaning, envir = .GlobalEnv)
+  assign("epc_gas_grid_flag", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Some prints to help check data cleaning
@@ -866,7 +859,7 @@ scomm_glazing <- function(data, glaz = WINDOWS_DESCRIPTION, type = GLAZED_TYPE, 
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed glazing type. Adding "glazing_type" object to the environment.\n')
-  assign("glazing_type", cleaning, envir = .GlobalEnv)
+  assign("epc_glazing_type", cleaning, envir = .GlobalEnv)
 
   # TODO some tables - but needs thought as the logic isnt just a 1:1 or 2:1 mapping
 
@@ -914,7 +907,7 @@ scomm_energy <- function(data, sap = CURRENT_ENERGY_EFFICIENCY, energy = ENERGY_
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP energy data cleaning. Adding "SAP_energy" object to the environment.\n')
-  assign("SAP_energy", cleaning, envir = .GlobalEnv)
+  assign("epc_SAP_energy", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Visualise SAP score to SAP band
@@ -950,7 +943,7 @@ scomm_demand <- function(data, space_heat = SPACE_HEATING_DEMAND, water_heat = W
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP heat demand data cleaning. Adding "SAP_heat" object to the environment.\n')
-  assign("SAP_heat", cleaning, envir = .GlobalEnv)
+  assign("epc_SAP_heat", cleaning, envir = .GlobalEnv)
 
 }
 
@@ -982,7 +975,7 @@ scomm_bills <- function(data, heat_cost = HEATING_COST_CURRENT, water_cost = HOT
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP energy bill data cleaning. Adding "SAP_bills" object to the environment.\n')
-  assign("SAP_bills", cleaning, envir = .GlobalEnv)
+  assign("epc_SAP_bills", cleaning, envir = .GlobalEnv)
 
 }
 
@@ -1025,7 +1018,7 @@ scomm_environmental <- function(data, carbon = CO2_EMISSIONS_CURRENT, env = ENVI
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP environmental impact data cleaning. Adding "env_impact" object to the environment.\n')
-  assign("env_impact", cleaning, envir = .GlobalEnv)
+  assign("epc_env_impact", cleaning, envir = .GlobalEnv)
 
   if(is.null(mute) || mute == FALSE){
     # Print table to visualise the score to bands
@@ -1091,7 +1084,7 @@ scomm_energy_gen <- function(data, lzc = LZC_ENERGY_SOURCES, pv = PHOTO_SUPPLY, 
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed energy generation technology data cleaning. Adding "energy_generation" object to the environment.\n')
-  assign("energy_generation", cleaning, envir = .GlobalEnv)
+  assign("epc_energy_generation", cleaning, envir = .GlobalEnv)
 
 }
 
@@ -1141,6 +1134,6 @@ epc_improves_scomm <- function(data, imp = IMPROVEMENTS) {
   print(unique_values)
 
   # Assign the new table to the current table or a new data table
-  assign("unique_improvement_strings", unique_values, envir = .GlobalEnv)
+  assign("epc_unique_improvement_strings", unique_values, envir = .GlobalEnv)
 
 }
