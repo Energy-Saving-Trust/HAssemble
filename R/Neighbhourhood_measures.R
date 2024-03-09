@@ -18,7 +18,7 @@
 neigh_meas <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
 
   if(is.null(geogs)){
-    geogs = c('OS_TOPO_TOID', 'BLOCK_ID', 'COA', 'LSOA', "POSTCODE", "POSTCODE_SECTOR")
+    geogs = c('OS_TOPO_TOID', 'BLOCK_ID', 'COA_CODE', 'LSOA_CODE', "POSTCODE", "POSTCODE_SECTOR")
   }
 
   # Doesnt play well with factors in the geography columns so we're going to flag up a need to change the data types
