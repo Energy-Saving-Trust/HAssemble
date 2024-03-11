@@ -641,9 +641,10 @@ scomm_heating <- function(data, m_heat = MAINHEAT_DESCRIPTION, meter = ENERGY_TA
     ) %>%
     dplyr::mutate(EPC_HEATING_SYSTEM_1 = case_when(
       EPC_HEATING_SYSTEM_1 == "Unknown" &
-        grepl("(?i)storage heater", {{imp}}) ~ "Electricity",
+        # If in doubt assume room heater
+        grepl("(?i)storage heater", {{imp}}) ~ "Room Heater",
       EPC_HEATING_SYSTEM_1 == "Unknown" &
-        grepl("(?i)with biomass boiler", {{imp}}) ~ "Solid",
+        grepl("(?i)with biomass boiler", {{imp}}) ~ "Boiler",
       TRUE ~ EPC_HEATING_SYSTEM_1)
     ) %>%
     mutate(EPC_METER = case_when(
