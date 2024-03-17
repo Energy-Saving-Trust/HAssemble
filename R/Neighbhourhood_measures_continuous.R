@@ -40,7 +40,8 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
         mutate(
           !!paste0("median_", geogs[i]) := median(log({{var}}), na.rm = T),
           !!paste0("sd_", geogs[i]) := sd(log({{var}}), na.rm = T)
-        )
+        ) %>%
+        ungroup()
 
       print(paste0("Finished processing ", ensym(var), " for ", geogs[i]))
 
@@ -51,7 +52,8 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
         mutate(
           !!paste0("median_", geogs[i]) := median(log({{var}}), na.rm = T),
           !!paste0("sd_", geogs[i]) := sd(log({{var}}), na.rm = T)
-        )
+        ) %>%
+        ungroup()
 
       print(paste0("Finished processing ", ensym(var), " for ", geogs[i]))
     }

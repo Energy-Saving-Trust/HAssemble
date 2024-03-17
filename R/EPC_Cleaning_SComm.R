@@ -301,8 +301,8 @@ scomm_walls <- function(data, walls = WALL_DESCRIPTION, imp = IMPROVEMENTS, mute
                       str_detect(WALL_DETAILS_1, regex("granite|whinstone|sandstone|solid brick|limestone|cob",
                                                      ignore_case = TRUE)) ~ "Solid Brick or Stone",
                       str_detect(WALL_DETAILS_1, regex("system built", ignore_case = TRUE)) ~ "System Built",
-                      str_detect(WALL_DETAILS_1, regex("Park home wall", ignore_case = TRUE)) ~ "Park Home Wall",
-                      str_detect(WALL_DETAILS_1, regex("Cob", ignore_case = TRUE)) ~ "Cob",
+                      str_detect(WALL_DETAILS_1, regex("park home wall", ignore_case = TRUE)) ~ "Park Home Wall",
+                      str_detect(WALL_DETAILS_1, regex("cob", ignore_case = TRUE)) ~ "Cob",
                       # Then all others categorised as unknown
                       TRUE ~ "Unknown")
                     ) %>%
@@ -333,7 +333,7 @@ scomm_walls <- function(data, walls = WALL_DESCRIPTION, imp = IMPROVEMENTS, mute
       TRUE ~ EPC_WALL_INS_1
       )
     ) %>%
-    dplyr::select(UPRN, EPC_WALL_CONST_1, EPC_WALL_INS_1, WALL_DETAILS_1, WALL_U_VALUES_1)
+    dplyr::select(UPRN, EPC_WALL_CONST_1, EPC_WALL_INS_1, WALL_DETAILS_1, WALL_U_VALUES_1, {{walls}})
 
     # Assign the new table to the current table or a new data table
     cat('\u2705 - Completed wall type and insulation cleaning. Adding "wall_details" object to the environment.\n')
@@ -386,6 +386,31 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
   cleaning <- data %>%
     tidyr::separate({{roofs}}, into = column_names, sep = " \\| ",
                     fill = "right", remove = FALSE) %>%
+    mutate(FLAT_ROOF_PRESENT_FIRST = case_when(
+      grepl("(?i)flat", ROOF_DETAILS_1) ~ "Yes",
+      TRUE ~ "No"
+    )) %>%
+    # If there is flat roof in the first element, but a room in roof exists somewhere in the column then we can assume the order is wrong
+    # And for a room in roof to exist there must be a loft
+    # We can assume that the second element is the actual proper main buildings loft type?
+    # REVIEW logic for this in more detail - this is a slight last minute change as I came to the RIR model...
+    # NOT FOR USE TO UNDERSTAND EACH ELEMENT AS IT WILL NOW BE DUPLICATING THE NON FLAT ROOF IN CASES WHERE A FLAT ROOF IS TOGETHER WITH ANOTHER TYPE
+    dplyr::mutate(ROOF_DETAILS_1 = case_when(
+      grepl("(?i)flat", ROOF_DETAILS_1) &
+        (str_detect(ROOF_DESCRIPTION, regex("roof room|pitched|thatched", ignore_case = T)) |
+           str_detect({{imp}}, regex("room-in-roof|loft insulation", ignore_case = T))) &
+        !(grepl("(?i)flat", ROOF_DETAILS_2)) ~ ROOF_DETAILS_2,
+      grepl("(?i)flat", ROOF_DETAILS_1) &
+        (str_detect(ROOF_DESCRIPTION, regex("roof room|pitched|thatched", ignore_case = T)) |
+           str_detect({{imp}}, regex("room-in-roof|loft insulation", ignore_case = T))) &
+        (grepl("(?i)flat", ROOF_DETAILS_2) &
+           !(grepl("(?i)flat", ROOF_DETAILS_3))) ~ ROOF_DETAILS_3,
+      grepl("(?i)flat", ROOF_DETAILS_1) &
+        (str_detect(ROOF_DESCRIPTION, regex("roof room|pitched|thatched", ignore_case = T)) |
+           str_detect({{imp}}, regex("room-in-roof|loft insulation", ignore_case = T))) &
+        (grepl("(?i)flat", ROOF_DETAILS_3)) ~ ROOF_DETAILS_4,
+      TRUE ~ ROOF_DETAILS_1
+    )) %>%
     dplyr::mutate(EPC_ROOF_CONST_1 = case_when(
       grepl("(?i)roof room", ROOF_DETAILS_1) &
         grepl("(?i)thatched", ROOF_DETAILS_1) ~ "Thatched room in roof",
@@ -401,9 +426,9 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
       EPC_ROOF_CONST_1 == "Unknown" &
         stringr::str_detect({{imp}}, regex("room-in-roof", ignore_case = TRUE)) ~ "Room in roof",
       EPC_ROOF_CONST_1 == "Unknown" &
-        stringr::str_detect({{imp}}, regex("flat roof insulation", ignore_case = TRUE)) ~ "Flat roof",
-      EPC_ROOF_CONST_1 == "Unknown" &
         stringr::str_detect({{imp}}, regex("loft insulation", ignore_case = TRUE)) ~ "Pitched roof",
+      EPC_ROOF_CONST_1 == "Unknown" &
+        stringr::str_detect({{imp}}, regex("flat roof insulation", ignore_case = TRUE)) ~ "Flat roof",
       TRUE ~ EPC_ROOF_CONST_1
       )
     ) %>%
@@ -413,15 +438,17 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
                                       NA_real_)) %>%
     dplyr::mutate(EPC_ROOF_INS_1 = case_when(
       # TODO insulated flat roof or RIR is missing here or needs more thought?
-      EPC_ROOF_CONST_1 %in% c("Flat roof", "Another dwelling above") ~ "No loft",
+      EPC_ROOF_CONST_1 %in% c("Flat roof", "Another dwelling above") ~ "No_loft",
       # As in rdSAP for Scotland anything below 0.35 wouldn't be retrofitted according to Item A; Appendix T
       # TODO add in any logic we can to include age band as well - maybe more we can squeeze
       ROOF_U_VALUES_1 <= 0.17 |
       # PEAT will then assume that all roof space is loft space if it's 250mm+. Probably fine for the very low ones, unlikely to be flat roof if it's very low
         grepl("250|270|300|350|400|400+", ROOF_DETAILS_1) ~ ">250 mm",
+      (ROOF_U_VALUES_1 <= 0.4 &
+        ROOF_U_VALUES_1 > 0.17) |
       grepl("100|150|200", ROOF_DETAILS_1) ~ "100-249 mm",
-      # As in rdSAP for Scotland anything above 2.3 must be uninsulated
-      ROOF_U_VALUES_1 >= 2.3 |
+      # As in rdSAP for Scotland anything above 0.4 must be uninsulated or a very low level of insulation
+      ROOF_U_VALUES_1 > 0.4 |
         grepl("(?i)0|12|25|50|75|no insulation|limited insulation", ROOF_DETAILS_1) ~ "0-99 mm",
       # Then all others categorised as unknown
       TRUE ~ "Unknown")
@@ -430,22 +457,41 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
     # If description is "insulated" then we can go by age band to infer some thickness or u value based on type
       dplyr::mutate(EPC_ROOF_INS_1 = case_when(
         EPC_ROOF_INS_1 == "Unknown" &
-        # Loft insulation is actually anything below 150 mm but we can be a little conservative here I think
-          grepl("(?i)room-in-roof|flat roof insulation|loft insulation", {{imp}}) ~ "0-99 mm",
+          # Loft insulation is actually anything below 150 mm but we can be a little conservative here I think
+          grepl("(?i)room-in-roof|loft insulation", IMPROVEMENTS) ~ "0-99 mm",
+        EPC_ROOF_INS_1 == "Unknown" &
+          !(str_detect(EPC_ROOF_CONST_1, regex("pitched|room|thatched", ignore_case = T))) &
+          grepl("(?i)flat roof", IMPROVEMENTS) ~ "No_loft",
+        # TODO look into logic for if no loft insulation improvement then it must be OK? Appendix T in rdSAP 2012 has that a loft ins improvement
+        # is reccomended with insulation below 150. So maybe we assume 250mm or PEAT will still try and top it up if we say 100-249?
         # Anything Age band F and below is assumed to have >0.68 U-value which would be in the 0-99 mm range
         # It may have been retrofitted since being built, but we dont know that...
         EPC_ROOF_INS_1 == "Unknown" &
-          EPC_ROOF_CONST_1 %in% c("Flat roof", "Room in roof", "Pitched roof") &
+          EPC_ROOF_CONST_1 %in% c("Room in roof", "Pitched roof") &
           {{ages}} %in% c("before 1919", "1919-1929", "1930-1949", "1950-1964",
                           "1965-1975", "1976-1983") &
           stringr::str_detect(ROOF_DETAILS_1, regex("insulated|\\bloft insulation\\b", ignore_case = TRUE)) ~ "0-99 mm",
         # Pitched, insulated at rafters has slightly different assumptions compared to if its not known after a certain point. It never reaches 0.17 U value
         EPC_ROOF_INS_1 == "Unknown" &
-          (EPC_ROOF_CONST_1 %in% c("Flat roof", "Room in roof") |
+          (EPC_ROOF_CONST_1 %in% c("Room in roof") |
           stringr::str_detect(ROOF_DETAILS_1, regex("insulated at rafters", ignore_case = TRUE))) &
           {{ages}} %in% c("1984-1991", "1992-1998", "1999-2002",
                           "2003-2007", "2008 onwards") &
           stringr::str_detect(ROOF_DETAILS_1, regex("insulated|\\bloft insulation\\b", ignore_case = TRUE)) ~ "100-249 mm",
+        # Between 1984 - 2003 we can tentatively assume 100-249 mm
+        EPC_ROOF_INS_1 == "Unknown" &
+          EPC_ROOF_CONST_1 %in% c("Pitched roof") &
+          {{ages}} %in% c("1984-1991", "1992-1998", "1999-2002") &
+          stringr::str_detect(ROOF_DETAILS_1, regex("insulated|\\bloft insulation\\b", ignore_case = TRUE)) ~ "100-249 mm",
+        # Thatched roofs have equivalent of 100-249 mm other than for the most modern
+        # Most modern age bands (K and L) arent present in EPC data...
+        EPC_ROOF_INS_1 == "Unknown" &
+          EPC_ROOF_CONST_1 %in% c("Thatched roof", "Thatched room in roof") &
+          stringr::str_detect(ROOF_DETAILS_1, regex("insulated|\\bloft insulation\\b", ignore_case = TRUE)) ~ "100-249 mm",
+        # Assumed additional would mean a bit more than usual?
+        EPC_ROOF_INS_1 == "Unknown" &
+          EPC_ROOF_CONST_1 %in% c("Thatched roof", "Thatched room in roof") &
+          stringr::str_detect(ROOF_DETAILS_1, regex("with additional insulation", ignore_case = TRUE)) ~ ">250 mm",
         # Anything Age band J and above is assumed to have <0.16 U-value which would be in the >250 mm range
         EPC_ROOF_INS_1 == "Unknown" &
           EPC_ROOF_CONST_1 == "Pitched roof" &
@@ -453,7 +499,7 @@ scomm_roof <- function(data, roofs = ROOF_DESCRIPTION, ages = CONSTRUCTION_AGE_B
           stringr::str_detect(ROOF_DETAILS_1, regex("insulated|\\bloft insulation\\b", ignore_case = TRUE)) ~ ">250 mm",
         TRUE ~ EPC_ROOF_INS_1)
     ) %>%
-    dplyr::select(UPRN, EPC_ROOF_CONST_1, EPC_ROOF_INS_1, ROOF_DETAILS_1, ROOF_U_VALUES_1, {{ages}})
+    dplyr::select(UPRN, EPC_ROOF_CONST_1, EPC_ROOF_INS_1, ROOF_DETAILS_1, ROOF_U_VALUES_1, FLAT_ROOF_PRESENT_FIRST, {{ages}}, {{imp}}, {{roofs}})
 
     # Assign the new table to the current table or a new data table
     cat('\u2705 - Completed roof type and insulation cleaning. Adding "roof_details" object to the environment.\n')
@@ -556,7 +602,7 @@ scomm_floor <- function(data, floors = FLOOR_DESCRIPTION, ages = CONSTRUCTION_AG
       TRUE ~ EPC_FLOOR_INS_1
       )
     ) %>%
-    dplyr::select(UPRN, EPC_FLOOR_CONST_1, EPC_FLOOR_INS_1, FLOOR_DETAILS_1, FLOOR_U_VALUES_1)
+    dplyr::select(UPRN, EPC_FLOOR_CONST_1, EPC_FLOOR_INS_1, FLOOR_DETAILS_1, FLOOR_U_VALUES_1, {{floors}})
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed floor type and insulation cleaning. Adding "floor_details" object to the environment.\n')
@@ -609,6 +655,7 @@ scomm_heating <- function(data, m_heat = MAINHEAT_DESCRIPTION, meter = ENERGY_TA
     # TODO are the HEATING_DETAILS_2 systems part of a hybrid system? Or are they considered main heating for another part of the house?
     # May need consideration as a heat pump in HEATING_DETAILS_1 will mask the existence of oil heating as another main heat source
     dplyr::mutate(EPC_HEATING_FUEL_1 = case_when(
+      grepl("(?i)No system present", HEATING_DETAILS_1) ~ "No fuel",
       # Always assume heat pumps are electric
       grepl("(?i)electric|electricity|trydan|Electricaire|heat pump", HEATING_DETAILS_1) ~ "Electricity",
       grepl("(?i)mains gas|gas", HEATING_DETAILS_1) &
@@ -636,14 +683,14 @@ scomm_heating <- function(data, m_heat = MAINHEAT_DESCRIPTION, meter = ENERGY_TA
       grepl("(?i)room heater|room heaters|electric heaters", HEATING_DETAILS_1) ~ "Room Heater",
       grepl("(?i)storage heater|storage heaters", HEATING_DETAILS_1) ~ "Storage Heater",
       grepl("(?i)community|communal", HEATING_DETAILS_1) ~ "Community",
-      grepl("(?i)stove|warm air|ceiling heating|micro-cogeneration", HEATING_DETAILS_1) ~ "Other",
+      grepl("(?i)stove|warm air|ceiling heating|micro-cogeneration|electric underfloor", HEATING_DETAILS_1) ~ "Other",
       TRUE ~ "Unknown")
     ) %>%
     dplyr::mutate(EPC_HEATING_SYSTEM_1 = case_when(
       EPC_HEATING_SYSTEM_1 == "Unknown" &
-        # If in doubt assume room heater
-        grepl("(?i)storage heater", {{imp}}) ~ "Room Heater",
-      EPC_HEATING_SYSTEM_1 == "Unknown" &
+      #   # If in doubt assume room heater?
+      #   grepl("(?i)storage heater", {{imp}}) ~ "Room Heater",
+      # EPC_HEATING_SYSTEM_1 == "Unknown" &
         grepl("(?i)with biomass boiler", {{imp}}) ~ "Boiler",
       TRUE ~ EPC_HEATING_SYSTEM_1)
     ) %>%
@@ -652,7 +699,7 @@ scomm_heating <- function(data, m_heat = MAINHEAT_DESCRIPTION, meter = ENERGY_TA
       {{meter}} == "Single" ~ "Single",
       TRUE ~ "Unknown"
     )) %>%
-    dplyr::select(UPRN, EPC_HEATING_FUEL_1, EPC_HEATING_SYSTEM_1, EPC_METER, HEATING_DETAILS_1, {{meter}})
+    dplyr::select(UPRN, EPC_HEATING_FUEL_1, EPC_HEATING_SYSTEM_1, {{m_heat}}, EPC_METER, HEATING_DETAILS_1, {{meter}})
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed heating and meter cleaning. Adding "main_heating" object to the environment.\n')
@@ -758,14 +805,14 @@ scomm_gas_grid <- function(data, grid = MAINS_GAS_FLAG, m_heat = MAINHEAT_DESCRI
 
   # Separate the wall elements into multiple columns with seperate()
   cleaning <- data %>%
-    dplyr::mutate(EPC_GAS_GRID_FLAG = case_when(
+    dplyr::mutate(EPC_ON_GAS_GRID_FLAG = case_when(
       grepl("(?i)mains gas", {{m_heat}}) |
         grepl("(?i)mains gas", {{s_heat}}) |
         {{grid}} %in% c("Y") ~ "Yes",
       {{grid}} %in% c("N") ~ "No",
       TRUE ~ "Unknown")
     ) %>%
-    dplyr::select(UPRN, EPC_GAS_GRID_FLAG, {{grid}}, {{m_heat}}, {{s_heat}})
+    dplyr::select(UPRN, EPC_ON_GAS_GRID_FLAG, {{grid}}, {{m_heat}}, {{s_heat}})
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed gas grid inference. Adding "gas_grid_flag" object to the environment.\n')
@@ -775,7 +822,7 @@ scomm_gas_grid <- function(data, grid = MAINS_GAS_FLAG, m_heat = MAINHEAT_DESCRI
     # Some prints to help check data cleaning
     # TODO checks for fuel types in main and secondary heating. Difficult because lots of pipes and different combos of fuels/types
     cat("Cross-tab of gas grid inference data vs. original EPC data from data input of ", ensym(grid), ":\n", sep = "")
-    print(table(cleaning$EPC_GAS_GRID_FLAG, cleaning[[ensym(grid)]], useNA = "ifany"))
+    print(table(cleaning$EPC_ON_GAS_GRID_FLAG, cleaning[[ensym(grid)]], useNA = "ifany"))
   }
 
 }
@@ -805,43 +852,50 @@ scomm_glazing <- function(data, glaz = WINDOWS_DESCRIPTION, type = GLAZED_TYPE, 
                   {{glaz}} := gsub("Description: ", "", {{glaz}})) %>%
     dplyr::mutate(GLAZING = case_when(
       # Single glazing or partial glazing
-      grepl("(?i)some|single glazed", {{glaz}}) |
+      grepl("(?i)some|single", {{glaz}}) |
         # only overwrite with single glazing if it's very poor glazing efficiency
         # Might be odd to overwrite where it clearly says "double glazing" in some way with single glazing
-        (grepl("(?i)single glazing", {{type}}) &
-           {{eff}} == "Very Poor") |
+        (grepl("(?i)single", {{type}}) &
+           grepl("(?i)very poor", {{eff}})) |
         (grepl("(?i)partial", {{glaz}}) &
            # TODO investigate why some homes get 0 for multiple glazing - doesnt make any sense, but still use as better to be conservative...
            {{multi}} <= 50) ~ "Single/Partial",
       # Triple
       (grepl("(?i)high performance|triple", {{glaz}})) ~ "Triple",
       # Double in some way(that is not already labelled by the single/partial above)
-      (grepl("(?i)double|multiple glazing throughout", {{glaz}})) ~ "Double",
+      (grepl("(?i)double|multiple glazing throughout", {{glaz}})) ~ "Multi",
       # Secondary
       (grepl("(?i)secondary", {{glaz}})) ~ "Secondary",
       TRUE ~ "Unknown")
     ) %>%
       dplyr::mutate(EPC_GLAZING_TYPE = case_when(
+        (GLAZING == "Multi" &
+           {{type}} %in% c("triple, known data", "triple glazing")) |
+          GLAZING == "Triple" ~ "Triple Glazing",
         # Pre 2003 double glazing (or broadly equivalent efficiency)
-        GLAZING == "Secondary" ~ "Double Glazing (pre 2003)",
-        GLAZING == "Double" &
+        GLAZING == "Secondary" &
+          {{age}} %in% c("before 1919", "1919-1929", "1930-1949",
+                         "1950-1964", "1965-1975", "1976-1983",
+                         "1984-1991", "1992-1998", "1999-2002") ~ "Double Glazing (pre 2003)",
+        GLAZING == "Secondary" &
+          {{age}} %in% c("2003-2007", "2008 onwards") ~ "Double Glazing (post 2003)",
+        GLAZING == "Multi" &
           {{type}} == "double glazing installed before 2002" ~ "Double Glazing (pre 2003)",
-        GLAZING == "Double" &
+        GLAZING == "Multi" &
           {{type}} %in% c("double glazing, unknown install date", "double, known data", "not defined", "", " ") &
             {{age}} %in% c("before 1919", "1919-1929", "1930-1949",
                             "1950-1964", "1965-1975", "1976-1983",
                             "1984-1991", "1992-1998", "1999-2002") ~ "Double Glazing (pre 2003)",
-        # If no real signs either way then use the older age bracket
-        GLAZING == "Double" &
+        # If no real signs either way then use the older age bracket for double glazing
+        GLAZING == "Multi" &
           {{age}} %in% c("", " ") ~ "Double Glazing (pre 2003)",
         # Post 2003 double glazing
-        (GLAZING == "Double" &
+        (GLAZING == "Multi" &
           {{type}} == "double glazing installed during or after 2002") |
-        (GLAZING == "Double" &
+        (GLAZING == "Multi" &
           {{type}} %in% c("double glazing, unknown install date", "double, known data", "not defined", "", " ") &
              {{age}} %in% c("2003-2007", "2008 onwards")) ~ "Double Glazing (post 2003)",
-        {{type}} %in% c("triple, known data", "triple glazing") ~ "Triple Glazing",
-        # Then all others categorised as unknown
+        # Then all others categorised as glazing's category (should be just unknown though as the code above should catch most)
         TRUE ~ GLAZING)
     ) %>%
     # dplyr::mutate(INFERENCE_FLAG = case_when(
@@ -852,6 +906,7 @@ scomm_glazing <- function(data, glaz = WINDOWS_DESCRIPTION, type = GLAZED_TYPE, 
     dplyr::mutate(EPC_GLAZING_TYPE = case_when(
       EPC_GLAZING_TYPE == "Unknown" &
         grepl("(?i)single glazed windows", {{imp}}) ~ "Single/Partial",
+      EPC_GLAZING_TYPE == "Unknown" &
         {{glaz}} %in% c("double glazing, unknown install date", "double, known data", "not defined", "", " ") &
         grepl("(?i)Replacement glazing units", {{imp}}) ~ "Double Glazing (pre 2003)",
       TRUE ~ EPC_GLAZING_TYPE)
