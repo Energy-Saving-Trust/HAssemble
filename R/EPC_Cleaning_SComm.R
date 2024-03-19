@@ -996,7 +996,7 @@ scomm_demand <- function(data, space_heat = SPACE_HEATING_DEMAND, water_heat = W
     mutate({{space_heat}} := as.numeric({{space_heat}}),
            {{water_heat}} := as.numeric({{water_heat}})) %>%
     mutate(EPC_HEAT_DEMAND = {{space_heat}} + {{water_heat}}) %>%
-    dplyr::select(UPRN, EPC_HEAT_DEMAND)
+    dplyr::select(UPRN, {{space_heat}}, {{water_heat}}, EPC_HEAT_DEMAND)
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP heat demand data cleaning. Adding "SAP_heat" object to the environment.\n')
