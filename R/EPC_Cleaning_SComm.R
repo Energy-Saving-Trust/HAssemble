@@ -584,9 +584,9 @@ scomm_floor <- function(data, floors = FLOOR_DESCRIPTION, ages = CONSTRUCTION_AG
       # As in rdSAP for Scotland anything below 0.18 must be equivalent to not needing a floor insulation retrofit
       # TODO add in any logic we can to include age band as well - maybe more we can squeeze
       FLOOR_U_VALUES_1 <= 0.18 |
-        str_detect(FLOOR_DETAILS_1, regex(", insulated|insulated \\(assumed\\)", ignore_case = TRUE)) |
+        str_detect(FLOOR_DETAILS_1, regex("insulated|insulated \\(assumed\\)", ignore_case = TRUE)) |
           (FLOOR_DETAILS_1 == "Conservatory" &
-           str_detect(FLOOR_DETAILS_2, regex(", insulated|insulated \\(assumed\\)", ignore_case = TRUE))) ~ "Insulated",
+           str_detect(FLOOR_DETAILS_2, regex("insulated|insulated \\(assumed\\)", ignore_case = TRUE))) ~ "Insulated",
       # As in rdSAP for Scotland anything at or above 0.5 must be equivalent to needing a floor insulation retrofit
       # Anything lower rdSAP wont recommend even though it is supposed to get to 0.25/0.18... (W1/W2 in Appendix T)
       FLOOR_U_VALUES_1 >= 0.5 |
@@ -598,6 +598,7 @@ scomm_floor <- function(data, floors = FLOOR_DESCRIPTION, ages = CONSTRUCTION_AG
     ) %>%
     dplyr::mutate(EPC_FLOOR_INS_1 = case_when(
       EPC_FLOOR_INS_1 == "Unknown" &
+        EPC_FLOOR_CONST_1 %in% c("Solid", "Suspended", "Unknown") &
         str_detect({{imp}}, regex("Floor insulation")) ~ "Uninsulated",
       TRUE ~ EPC_FLOOR_INS_1
       )
@@ -747,11 +748,11 @@ scomm_sec_heating <- function(data, s_heat = SECONDHEAT_DESCRIPTION, mute = NULL
       grepl("(?i)electric|electricity|trydan|Electricaire|heat pump", {{s_heat}}) ~ "Electricity",
       grepl("(?i)mains gas|gas", {{s_heat}}) &
         !grepl("(?i)lpg|liquid", {{s_heat}}) ~ "Mains Gas",
+      grepl("(?i)coal|smokeless fuel|anthracite|dual fuel|mineral", {{s_heat}}) ~ "Solid",
       grepl("(?i)wood|pellet|log|biomass|biofuel|rapeseed oil|bioethanol", {{s_heat}}) ~ "Biomass",
       # Word boundary for "oil" so that it doesnt match the "oil" in "boiler"
       grepl("(?i)\\boil\\b|b30k", {{s_heat}}) ~ "Oil",
       grepl("(?i)lpg|lng", {{s_heat}}) ~ "LPG",
-      grepl("(?i)coal|smokeless fuel|anthracite|dual fuel|mineral", {{s_heat}}) ~ "Solid",
       # Then all others categorised as unknown
       TRUE ~ "Unknown")
     ) %>%
