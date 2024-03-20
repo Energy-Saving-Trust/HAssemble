@@ -34,12 +34,14 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
   for (i in 1:length(geogs)){
     print(paste0("Started processing ", ensym(var), " for ", geogs[i]))
 
+    # TODO does this and the old method group all the NA BLOCK_IDs together in the calcs?
+    # I think they might...
     if(i == 1){
       nhm <- df %>%
         group_by(!!sym(geogs[i]), {{ptype}}) %>%
         mutate(
-          !!paste0("median_", geogs[i]) := median(log({{var}}), na.rm = T),
-          !!paste0("sd_", geogs[i]) := sd(log({{var}}), na.rm = T)
+          !!paste0("median_", ensym(var), "_", geogs[i]) := median(log({{var}}), na.rm = T),
+          !!paste0("sd_", ensym(var), "_", geogs[i]) := sd(log({{var}}), na.rm = T)
         ) %>%
         ungroup()
 
@@ -50,8 +52,8 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
       nhm <- nhm %>%
         group_by(!!sym(geogs[i]), {{ptype}}) %>%
         mutate(
-          !!paste0("median_", geogs[i]) := median(log({{var}}), na.rm = T),
-          !!paste0("sd_", geogs[i]) := sd(log({{var}}), na.rm = T)
+          !!paste0("median_", ensym(var), "_", geogs[i]) := if_else(is.na(!!sym(geogs[i])), 0, median(log({{var}}), na.rm = TRUE)),
+          !!paste0("sd_", ensym(var), "_", geogs[i]) := if_else(is.na(!!sym(geogs[i])), 0, sd(log({{var}}), na.rm = TRUE))
         ) %>%
         ungroup()
 
@@ -61,6 +63,15 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
     if(i == length(geogs)){
       nhm <- nhm %>%
         mutate(across(matches("^median_|^sd_"), ~replace(., is.na(.), 0)))
+
+      # Identify columns containing "_BLOCK_ID" for neighbhourhood measures
+      block_columns <- grep("_BLOCK_ID", names(nhm), value = TRUE)
+
+      # Check if the "BLOCK_ID" column has NA values
+      id_na_rows <- is.na(nhm$BLOCK_ID)
+
+      # Replace values in identified columns with "_BLOCK_ID" to 0 if "BLOCK_ID" column has NA values
+      nhm[id_na_rows, block_columns] <- 0
 
       assign(final_df_name,
              nhm,
