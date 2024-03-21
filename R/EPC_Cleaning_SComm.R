@@ -943,10 +943,11 @@ scomm_energy <- function(data, sap = CURRENT_ENERGY_EFFICIENCY, energy = ENERGY_
 
   cleaning <- data %>%
     mutate(EPC_SAP_SCORE = as.numeric({{sap}}),
-           energy_demand = as.numeric({{energy}}),
+           EPC_ENERGY_CONSUMPTION_CURRENT = as.numeric({{energy}}),
            floor_area = as.numeric({{tfa}})) %>%
     mutate(EPC_SAP_BAND = case_when(
-      EPC_SAP_SCORE <= 20 ~ "G",
+      EPC_SAP_SCORE >0 &
+        EPC_SAP_SCORE <= 20 ~ "G",
       EPC_SAP_SCORE >= 21 &
         EPC_SAP_SCORE <= 38 ~ "F",
       EPC_SAP_SCORE >= 39 &
@@ -958,9 +959,10 @@ scomm_energy <- function(data, sap = CURRENT_ENERGY_EFFICIENCY, energy = ENERGY_
       EPC_SAP_SCORE >= 81 &
         EPC_SAP_SCORE <= 91 ~ "B",
       EPC_SAP_SCORE >= 92 ~ "A",
+      TRUE ~ "Unknown"
     )) %>%
-    mutate(EPC_ENERGY_DEMAND = energy_demand * floor_area) %>%
-    dplyr::select(UPRN, EPC_SAP_BAND, {{sap}}, EPC_SAP_SCORE, EPC_ENERGY_DEMAND)
+    mutate(EPC_ENERGY_DEMAND = EPC_ENERGY_CONSUMPTION_CURRENT * floor_area) %>%
+    dplyr::select(UPRN, EPC_SAP_BAND, {{sap}}, EPC_SAP_SCORE, EPC_ENERGY_DEMAND, EPC_ENERGY_CONSUMPTION_CURRENT)
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP energy data cleaning. Adding "SAP_energy" object to the environment.\n')
@@ -1129,7 +1131,7 @@ scomm_energy_gen <- function(data, lzc = LZC_ENERGY_SOURCES, pv = PHOTO_SUPPLY, 
     )) %>%
     mutate(EPC_THERMAL_FLAG = case_when(
       grepl("(?i)Y|true", {{therm}}) |
-        grepl("(?i)Solar water heating", {{lzc}}) ~ "Solar PV",
+        grepl("(?i)Solar water heating", {{lzc}}) ~ "Solar thermal",
       TRUE ~ "No solar thermal"
     )) %>%
     mutate(EPC_WIND_FLAG = case_when(
@@ -1137,7 +1139,11 @@ scomm_energy_gen <- function(data, lzc = LZC_ENERGY_SOURCES, pv = PHOTO_SUPPLY, 
         grepl("(?i)wind turbine", {{lzc}}) ~ "Wind turbine",
       TRUE ~ "No wind turbine"
     )) %>%
-    dplyr::select(UPRN, EPC_PV_FLAG, EPC_THERMAL_FLAG, EPC_WIND_FLAG, {{lzc}}, {{pv}}, {{therm}}, {{wind}})
+    mutate(EPC_HYDRO_FLAG = case_when(
+        grepl("(?i)hydro-electric", {{lzc}}) ~ "Hydro-electric",
+      TRUE ~ "No hydro-electric"
+    )) %>%
+    dplyr::select(UPRN, EPC_PV_FLAG, EPC_THERMAL_FLAG, EPC_WIND_FLAG, EPC_HYDRO_FLAG, {{lzc}}, {{pv}}, PV_kwh, PV_perc, {{therm}}, {{wind}})
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed energy generation technology data cleaning. Adding "energy_generation" object to the environment.\n')
