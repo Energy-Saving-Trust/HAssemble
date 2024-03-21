@@ -52,8 +52,8 @@ neigh_meas_cont <- function(df, var, geogs = NULL, ptype = PTYPE_SUBGROUP) {
       nhm <- nhm %>%
         group_by(!!sym(geogs[i]), {{ptype}}) %>%
         mutate(
-          !!paste0("median_", ensym(var), "_", geogs[i]) := if_else(is.na(!!sym(geogs[i])), 0, median(log({{var}}), na.rm = TRUE)),
-          !!paste0("sd_", ensym(var), "_", geogs[i]) := if_else(is.na(!!sym(geogs[i])), 0, sd(log({{var}}), na.rm = TRUE))
+          !!paste0("median_", ensym(var), "_", geogs[i]) := median(log({{var}}), na.rm = T),
+          !!paste0("sd_", ensym(var), "_", geogs[i]) := sd(log({{var}}), na.rm = T)
         ) %>%
         ungroup()
 
