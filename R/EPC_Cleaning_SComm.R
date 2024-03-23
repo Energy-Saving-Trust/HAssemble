@@ -1030,7 +1030,7 @@ scomm_bills <- function(data, heat_cost = HEATING_COST_CURRENT, water_cost = HOT
            {{water_cost}} := as.numeric({{water_cost}}),
            {{lighting_cost}} := as.numeric({{lighting_cost}})) %>%
     mutate(EPC_ENERGY_BILL = {{heat_cost}} + {{water_cost}} + {{lighting_cost}}) %>%
-    dplyr::select(UPRN, EPC_ENERGY_BILL)
+    dplyr::select(UPRN, EPC_ENERGY_BILL, {{heat_cost}}, {{water_cost}}, {{lighting_cost}})
 
   # Assign the new table to the current table or a new data table
   cat('\u2705 - Completed SAP energy bill data cleaning. Adding "SAP_bills" object to the environment.\n')
